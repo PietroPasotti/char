@@ -1,0 +1,5 @@
+*.tar
+
+.coverage
+__pycache__/
+*.py[cod]

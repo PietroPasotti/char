@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: char-job
+  namespace: chars
+spec:
+  template:
+    metadata:
+      name: char-pod
+    spec:
+      containers:
+      - name: char
+        image: char:latest
+        imagePullPolicy: Never # it's a local image
+      restartPolicy: Never
