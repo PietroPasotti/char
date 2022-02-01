@@ -1,3 +1,3 @@
 #!/bin/bash
 
-uvicorn char:app
+uvicorn char:app --port 8080

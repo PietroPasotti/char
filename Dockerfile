@@ -6,5 +6,8 @@ RUN pip3 install -r requirements.txt
 
 COPY . .
 RUN ["chmod", "661", "./main.sh"]
-CMD ["./main.sh"]
+#CMD ["./main.sh"]
 
+# Set entrypoint
+EXPOSE 8080
+ENTRYPOINT ["./main.sh"]

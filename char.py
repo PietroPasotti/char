@@ -29,9 +29,13 @@ async def deal(enemy, damage, client: httpx.AsyncClient):
 
 async def try_ping(enemy):
     client: httpx.AsyncClient
-    async with httpx.AsyncClient() as client:
-        resp = await client.get('http://' + enemy + '/is_alive')
-        return resp.is_success and resp.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get('http://' + enemy + '/is_alive')
+            return resp.is_success and resp.json()
+    except Exception as e:
+        logger.error(f"{e}; cannot ping {enemy}")
+        return False
 
 
 @app.get('/is_alive')
