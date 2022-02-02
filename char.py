@@ -26,7 +26,7 @@ def startup():
 
 
 async def deal(enemy, damage, client: httpx.AsyncClient):
-    await client.post('http://' + enemy + f'/attack/?damage={damage}')
+    await client.post('http://' + enemy + f'/attack?damage={damage}')
 
 
 async def try_ping(enemy):
