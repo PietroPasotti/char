@@ -7,7 +7,7 @@ import os
 import random
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 
 app = FastAPI()
 logger = logging.getLogger('char')
@@ -51,28 +51,33 @@ async def status():
     """returns the hp of this instance and a list of known enemies
     (and whether they're still alive)
     """
-    return {'name': app.state.name,
-            'hp': app.state.hp,
-            'enemies':
-                {enemy: await try_ping(enemy) for enemy in app.state.enemies}
-            }
+    return {
+        'name': app.state.name,
+        'hp': app.state.hp,
+        'enemies':
+            {enemy: await try_ping(enemy) for enemy in app.state.enemies}
+    }
+
+
+def retaliate(enemies):
+    for enemy in enemies:
+        damage = random.randrange(10, 20)
+        async with httpx.AsyncClient() as client:
+            await deal(enemy, damage, client)
+            logger.info(f'dealing {damage} to {enemy}')
 
 
 @app.post("/attack")
-async def attack(damage: int):
+async def attack(damage: int, background_tasks: BackgroundTasks):
     """inflicts `damage` to this char; the char will attack back!"""
     if app.state.hp < 0:
         raise RuntimeError('dead')
 
     app.state.hp -= damage
     logger.info(f'taken {damage}')
-    if app.state.hp > 0:
-        dealt = random.randrange(10, 20)
-        logger.info(app.state.enemies)
-        for enemy in app.state.enemies:
-            async with httpx.AsyncClient() as client:
-                await deal(enemy, dealt, client)
-                logger.info(f'dealt {damage} to {enemy}')
+
+    if app.state.hp > 0 and (enemies := app.state.enemies):
+        background_tasks.add_task(retaliate, enemies)
     else:
         logger.info(f'dead.')
     return app.state.hp
