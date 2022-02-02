@@ -11,6 +11,8 @@ from fastapi import FastAPI
 
 app = FastAPI()
 logger = logging.getLogger('char')
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig(level=LOGLEVEL)
 
 
 @app.on_event("startup")
@@ -24,7 +26,7 @@ def startup():
 
 
 async def deal(enemy, damage, client: httpx.AsyncClient):
-    await client.post('http://' + enemy + '/attack', data={'damage': damage})
+    await client.post('http://' + enemy + f'/attack/?damage={damage}')
 
 
 async def try_ping(enemy):
@@ -46,7 +48,8 @@ async def is_alive():
 
 @app.get('/status')
 async def status():
-    """returns the hp of this instance and a list of known enemies (and whether they're still alive)
+    """returns the hp of this instance and a list of known enemies
+    (and whether they're still alive)
     """
     return {'name': app.state.name,
             'hp': app.state.hp,
