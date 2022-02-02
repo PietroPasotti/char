@@ -73,3 +73,9 @@ async def attack(damage: int):
     else:
         logger.info(f'dead.')
     return app.state.hp
+
+
+@app.post("/heal")
+async def attack(damage: int):
+    """Heals this char."""
+    app.state.hp = random.randrange(40, 60)
