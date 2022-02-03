@@ -5,6 +5,7 @@
 import logging
 import os
 import random
+import requests
 
 import httpx
 from fastapi import FastAPI, BackgroundTasks, Request
@@ -19,18 +20,11 @@ logging.basicConfig(level=LOGLEVEL)
 def startup():
     app.state.hp = random.randrange(40, 60)
     enemies = os.environ.get('ENEMIES', '')
+    logger.debug(f"Enemies: {enemies}")
     name = os.environ.get('NAME', '')
     logger.info(f'spawning {name}...')
     app.state.name = name
     app.state.enemies = enemies.split(';') if enemies else []
-
-
-async def deal(enemy, damage, client: httpx.AsyncClient):
-    try:
-        await client.post('http://' + enemy + f'/attack?damage={damage}',
-                          timeout=10.)
-    except Exception as e:
-        logger.error(f"{e}: cannot deal damage to {enemy}")
 
 
 async def try_ping(enemy):
@@ -63,12 +57,27 @@ async def status(request: Request):
     }
 
 
-async def retaliate(enemies):
+# async def async_retaliate(enemies):
+#     for enemy in enemies:
+#         damage = random.randrange(10, 20)
+#         async with httpx.AsyncClient() as client:
+#             logger.info(f'dealing {damage} to {enemy}')
+#             url = 'http://' + enemy + f'/attack?damage={damage}'
+#             try:
+#                 await client.post(url)
+#             except Exception as e:
+#                 logger.error(f"{e}: cannot deal damage to {enemy}")
+
+
+def retaliate(enemies):
     for enemy in enemies:
         damage = random.randrange(10, 20)
-        async with httpx.AsyncClient() as client:
-            logger.info(f'dealing {damage} to {enemy}')
-            await deal(enemy, damage, client)
+        logger.info(f'dealing {damage} to {enemy}')
+        url = 'http://' + enemy + f'/attack?damage={damage}'
+        try:
+            requests.post(url)
+        except Exception as e:
+            logger.error(f"{e}: cannot deal damage to {enemy}")
 
 
 @app.post("/attack")
@@ -83,6 +92,7 @@ async def attack(damage: int, background_tasks: BackgroundTasks):
         logger.info('nobody to leash out to')
     else:
         logger.info('retaliating')
+        # background_tasks.add_task(async_retaliate, enemies)
         background_tasks.add_task(retaliate, enemies)
     return app.state.hp
 
