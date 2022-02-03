@@ -7,7 +7,7 @@ import os
 import random
 
 import httpx
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Request
 
 app = FastAPI()
 logger = logging.getLogger('char')
@@ -26,7 +26,11 @@ def startup():
 
 
 async def deal(enemy, damage, client: httpx.AsyncClient):
-    await client.post('http://' + enemy + f'/attack?damage={damage}')
+    try:
+        await client.post('http://' + enemy + f'/attack?damage={damage}',
+                          timeout=10.)
+    except Exception as e:
+        logger.error(f"{e}: cannot deal damage to {enemy}")
 
 
 async def try_ping(enemy):
@@ -47,39 +51,39 @@ async def is_alive():
 
 
 @app.get('/status')
-async def status():
+async def status(request: Request):
     """returns the hp of this instance and a list of known enemies
     (and whether they're still alive)
     """
     return {
-        'name': app.state.name,
+        'name': app.state.name or str(request.client.host),
         'hp': app.state.hp,
         'enemies':
             {enemy: await try_ping(enemy) for enemy in app.state.enemies}
     }
 
 
-def retaliate(enemies):
+async def retaliate(enemies):
     for enemy in enemies:
         damage = random.randrange(10, 20)
         async with httpx.AsyncClient() as client:
-            await deal(enemy, damage, client)
             logger.info(f'dealing {damage} to {enemy}')
+            await deal(enemy, damage, client)
 
 
 @app.post("/attack")
 async def attack(damage: int, background_tasks: BackgroundTasks):
     """inflicts `damage` to this char; the char will attack back!"""
-    if app.state.hp < 0:
-        raise RuntimeError('dead')
-
     app.state.hp -= damage
     logger.info(f'taken {damage}')
 
-    if app.state.hp > 0 and (enemies := app.state.enemies):
-        background_tasks.add_task(retaliate, enemies)
+    if app.state.hp <= 0:
+        logger.info('char is dead')
+    elif not (enemies := app.state.enemies):
+        logger.info('nobody to leash out to')
     else:
-        logger.info(f'dead.')
+        logger.info('retaliating')
+        background_tasks.add_task(retaliate, enemies)
     return app.state.hp
 
 

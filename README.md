@@ -2,15 +2,16 @@
 `newgrp docker`
 
 To build:
-`docker build --tag char . `
+`docker build --tag localhost:32000/char . `
+
+To send to microk8s:
+`docker push localhost:32000/char`
 
 Run an ork:
-`docker run --env ENEMIES=127.0.0.1:8001 --env UVICORN_PORT=8000 --env NAME=ork -p 8000:8000 
-    --expose 8000 --rm -d char`
+`docker run --env ENEMIES=127.0.0.1:8001 --env NAME=ork -p 8000:8080 --expose 8000 --rm -d char`
 
 Run an elf:
-`docker run --env ENEMIES=127.0.0.1:8000 --env UVICORN_PORT=8001 --env NAME=elf -p 8001:8001 
-    --expose 8001 --rm -d char`
+`docker run --env ENEMIES=127.0.0.1:8000 --env NAME=elf -p 8001:8080 --expose 8001 --rm -d char`
 
 Then open the docs at `127.0.0.1:8001/docs` and `/attack` the ork for 0 damage; watch the battle unfold.
 
